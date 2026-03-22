@@ -1,0 +1,33 @@
+node
+{
+  def mavenHome=tool name:'Maven-3.9.13'
+  stage('code checkoutt')
+  {
+    git branch: 'dev', url: 'https://github.com/lokesh-tatikonda/maven-webapplication-project-kkfunda.git'
+  }
+  stage('compile')
+  {
+    sh "${mavenHome}/bin/mvn compile"
+  }
+  stage ('build')
+  {
+    sh "${mavenHome}/bin/mvn clean package"
+  }
+  stage ('sonar report')
+  {
+    sh "${mavenHome}/bin/mvn sonar:sonar"
+  }
+  stage ('Deploy to Tomcat')
+  {
+    withCredentials([usernamePassword(
+    credentialsId: 'tomcat',
+    usernameVariable: 'USERN',
+    passwordVariable: 'PASSWORD'
+    )]) 
+    sh '''
+    curl -u $USERN:$PASSWORD \
+      -T target/maven-web-application.war \
+      "http://107.22.23.253:8080/manager/text/deploy?path=/pipeline&update=true"
+    '''
+  }
+}
