@@ -1,5 +1,6 @@
 node
 {
+  try{
   def mavenHome=tool name:'Maven-3.9.13'
   stage('code checkoutt')
   {
@@ -23,11 +24,23 @@ node
     credentialsId: 'tomcat',
     usernameVariable: 'USERN',
     passwordVariable: 'PASSWORD'
-    )]) 
+    )]) {
     sh '''
     curl -u $USERN:$PASSWORD \
       -T target/maven-web-application.war \
       "http://107.22.23.253:8080/manager/text/deploy?path=/pipeline&update=true"
     '''
+    }
   }
+   stage('Validation') {
+            sh 'curl -I http://107.22.23.253:8080/pipeline'
+        }
+  }catch (Exception e) {
+        currentBuild.result = 'FAILURE'
+        echo "Pipeline failed due to: ${e}"
+        throw e
+    } finally {
+        echo "Pipeline execution completed"
+    }
 }
+
