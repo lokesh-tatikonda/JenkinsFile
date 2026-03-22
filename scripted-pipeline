@@ -4,6 +4,7 @@ node
   def mavenHome=tool name:'Maven-3.9.13'
   stage('code checkoutt')
   {
+    notifySlack("STARTED")
     git branch: 'dev', url: 'https://github.com/lokesh-tatikonda/maven-webapplication-project-kkfunda.git'
   }
   stage('compile')
@@ -32,15 +33,28 @@ node
     '''
     }
   }
-   stage('Validation') {
-            sh 'curl -I http://107.22.23.253:8080/pipeline'
-        }
   }catch (Exception e) {
         currentBuild.result = 'FAILURE'
         echo "Pipeline failed due to: ${e}"
         throw e
     } finally {
         echo "Pipeline execution completed"
+        notifySlack(currentBuild.currentResult)
     }
 }
 
+def notifySlack(String buildStatus)
+{
+  if(buildStatus=='SUCCESS')
+  {
+    slackSend(color: '#05FA1D', message:"Success: ${env.BUILD_NUMBER}, Branch Name: ${env.BRANCH_NAME}, URL: ${env.BUILD_URL}", channel:'#all-lokesh') 
+  }
+  else if(buildStatus=='FAILURE')
+  {
+    slackSend(color: '#FA0C05', message:"Failed: ${env.BUILD_NUMBER}, Branch Name: ${env.BRANCH_NAME}, URL: ${env.BUILD_URL}", channel:'#all-lokesh') 
+  }
+  else
+  {
+    slackSend(message:"Started: ${env.BUILD_NUMBER}, Branch Name: ${env.BRANCH_NAME}, URL: ${env.BUILD_URL}", channel:'#all-lokesh') 
+  }
+}
