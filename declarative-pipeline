@@ -1,0 +1,63 @@
+pipeline
+{
+    agent any
+    tools
+    {
+        maven 'Maven-3.9.13'
+    }
+    stages
+    {
+        stage('checkout')
+        {
+            steps
+            {
+                git branch: 'dev', url: 'https://github.com/lokesh-tatikonda/maven-webapplication-project-kkfunda.git'
+            }
+        }
+        stage('compile')
+        {
+            steps
+            {
+               sh "mvn compile"
+            }
+        }
+        stage('build')
+        {
+            steps
+            {
+               sh "mvn clean package"
+            }
+        }
+        stage('sonar report')
+        {
+            steps
+            {
+               sh "mvn sonar:sonar"
+            }
+        }
+        stage('deploy to tomcat')
+        {
+            steps
+            {
+               withCredentials([usernamePassword(
+                credentialsId: 'tomcat',
+                usernameVariable: 'USERN',
+                passwordVariable: 'PASSWORD'
+                )]) {
+                sh '''
+                curl -u $USERN:$PASSWORD \
+                -T target/maven-web-application.war \
+                "http://107.22.23.253:8080/manager/text/deploy?path=/pipeline&update=true"
+                '''
+                }
+                
+            }
+        }
+    }
+    post{
+        always{
+                    slackSend(color: '#05FA1D', message:"${currentBuild.currentResult}: ${env.BUILD_NUMBER}, Branch Name: ${env.BRANCH_NAME}, URL: ${env.BUILD_URL}", channel:'#all-lokesh') 
+        }
+    }
+}
+    
